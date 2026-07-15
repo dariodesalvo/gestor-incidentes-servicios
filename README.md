@@ -1,85 +1,91 @@
-# java-base-project
+# gestor-incidentes-servicios
 
-Esta es una plantilla de proyecto diseñada para:
+**Gestión colaborativa de incidentes en servicios**
 
-* Java 17. :warning: Si bien el proyecto no lo limita explícitamente, el comando `mvn verify` no funcionará con
-  versiones más antiguas de Java.
-* JUnit 5. :warning: La versión 5 de JUnit es la más nueva del framework y presenta algunas diferencias respecto a la
-  versión "clásica" (JUnit 4). Para mayores detalles, ver:
-    * [Apunte de herramientas](https://docs.google.com/document/d/1VYBey56M0UU6C0689hAClAvF9ILE6E7nKIuOqrRJnWQ/edit#heading=h.dnwhvummp994)
-    * [Entrada de Blog (en inglés)](https://www.baeldung.com/junit-5-migration)
-    * [Entrada de Blog (en español)](https://www.paradigmadigital.com/dev/nos-espera-junit-5/)
-* Maven 3.8.1 o superior
+Aplicación web desarrollada como Trabajo Práctico de **Diseño de Sistemas (DDS)** en la
+**UTN FRBA**. Es una plataforma donde comunidades de usuarios reportan, siguen y resuelven
+**incidentes** que afectan a servicios prestados por distintas entidades (empresas de
+transporte, líneas, estaciones, establecimientos y sus servicios asociados).
 
-## Ejecutar tests
+## De qué se trata
+
+El sistema modela un problema real: los servicios que usamos a diario (un ascensor de una
+estación, un baño de una terminal, una escalera mecánica, etc.) fallan, y esas fallas afectan
+a mucha gente. La aplicación permite que las personas se organicen en **comunidades de interés**
+para detectar esos problemas, informarlos y gestionar su ciclo de vida hasta la resolución.
+
+Los ejes del dominio son:
+
+- **Entidades y establecimientos.** Las entidades (empresas, líneas, estaciones) agrupan
+  establecimientos, y cada establecimiento ofrece **servicios** concretos que pueden sufrir
+  incidentes.
+- **Incidentes.** Se abren cuando un servicio deja de funcionar correctamente, se asocian a una
+  o más comunidades y se cierran cuando el problema se resuelve. El sistema mantiene su estado y
+  permite consultarlos y generar informes.
+- **Comunidades y roles.** Los usuarios se agrupan en comunidades, envían solicitudes de ingreso
+  y son gestionados por administradores. Existen distintos **roles** (administrador, lector,
+  prestador) con permisos diferenciados.
+- **Notificaciones.** Ante un incidente, los miembros interesados son notificados por distintos
+  medios (correo electrónico, SMS/WhatsApp vía Twilio), con estrategias de envío inmediato o
+  diferido según la preferencia de cada usuario.
+- **Carga masiva.** Se pueden incorporar organizaciones y datos a través de archivos CSV.
+- **Informes.** El sistema genera informes de incidentes agregados según distintos criterios.
+
+## Arquitectura
+
+Es una aplicación web **MVC** con renderizado en el servidor:
+
+- **Capa web (Javalin).** Un router central expone las rutas y delega en *controllers* creados a
+  través de una *factory*. Incluye middleware de autenticación, manejo de sesiones y control de
+  acceso por rol.
+- **Vistas (Handlebars).** Las páginas se renderizan con plantillas `.hbs` integradas al motor de
+  render de Javalin. Los estáticos (CSS, imágenes) se sirven desde `resources/public`.
+- **Dominio (models).** El corazón del sistema: incidentes, entidades, establecimientos,
+  servicios, comunidades, usuarios y roles, además de tareas programadas y estrategias de
+  notificación.
+- **Persistencia (JPA).** El estado se persiste mediante JPA (con `jpa-extras`), sobre **MySQL**
+  en producción y **HSQLDB** en desarrollo/tests. Los repositorios encapsulan el acceso a datos.
+- **Integraciones externas.** Consumo de una API de georreferenciación (provincias/municipios) vía
+  Retrofit, envío de correos con Commons Email y de mensajería con el SDK de Twilio.
+- **Jobs.** Notificadores periódicos ejecutados como tareas programadas (cron) para el envío
+  diferido de avisos.
+
+## Stack tecnológico
+
+| Área | Tecnología |
+|------|------------|
+| Lenguaje | Java 17 |
+| Servidor web | Javalin 5 |
+| Vistas | Handlebars.java |
+| Persistencia | JPA + `jpa-extras`, MySQL / HSQLDB |
+| HTTP externo | Retrofit 2 + Gson |
+| Notificaciones | Commons Email, Twilio SDK |
+| CSV | Apache Commons CSV |
+| Utilidades | Lombok |
+| Tests | JUnit 5, Mockito |
+| Calidad | Checkstyle (Google), SpotBugs, JaCoCo |
+| Build | Maven |
+| Deploy | Docker / Render (Procfile) |
+
+## Estructura del repositorio
 
 ```
-mvn test
+src/main/java/ar/edu/utn/frba/dds/
+├── server/          # Javalin: App, Server, Router, handlers, middlewares, init
+├── controllers/     # Controllers MVC (login, incidentes, comunidades, entidades, ...)
+└── models/          # Dominio: incidentes, entidades, comunidades, servicios,
+                     #          repositorios, notificaciones, tareas, jobs, georef
+src/main/resources/
+├── templates/       # Vistas Handlebars (.hbs)
+└── public/          # Estáticos (css, img)
 ```
 
-## Validar el proyecto de forma exahustiva
+## Seguridad
 
-```
-mvn clean verify
-```
+La dependencia de Handlebars.java se mantiene en **4.5.2 o superior** para incorporar la
+corrección de la vulnerabilidad de *path traversal* en `FileTemplateLoader`
+([CVE-2026-55760](https://github.com/advisories/GHSA-r4gv-qr8j-p3pg)).
 
-Este comando hará lo siguiente:
+---
 
-1. Ejecutará los tests
-2. Validará las convenciones de formato mediante checkstyle
-3. Detectará la presencia de (ciertos) code smells
-4. Validará la cobertura del proyecto
-
-## Entrega del proyecto
-
-Para entregar el proyecto, crear un tag llamado `entrega-final`. Es importante que antes de realizarlo se corra la
-validación
-explicada en el punto anterior. Se recomienda hacerlo de la siguiente forma:
-
-```
-mvn clean verify && git tag entrega-final && git push origin HEAD --tags
-```
-
-## Configuración del IDE (IntelliJ)
-
-### Usar el SDK de Java 17
-
-1. En **File/Project Structure...**, ir a **Project Settings | Project**
-2. En **Project SDK** seleccionar la versión 17 y en **Project language level**
-   seleccionar `17 - Sealed types, always-strict floating-point semantics`
-
-![image](https://user-images.githubusercontent.com/39303639/228126065-221b9851-fb96-4f7f-a8e1-010732dc7ef6.png)
-
-### Usar fin de linea unix
-
-1. En **File/Settings...**, ir a **Editor | Code Style**.
-2. En la lista **Line separator**, seleccionar `Unix and OS X (\n)`.
-
-![image](https://user-images.githubusercontent.com/39303639/228126546-352289fa-8feb-4b39-99db-d8b860915fea.png)
-
-### Tabular con dos espacios
-
-1. En **File/Settings...**, ir a **Editor | Code Style | Java | Tabs and Indents**.
-2. Cambiar **Tab size**, **Indent** y **Continuation indent** a 2, 2 y 4 respectivamente:
-
-![image](https://user-images.githubusercontent.com/39303639/228127009-8c84ea72-969b-4e05-b311-45e3688a4164.png)
-
-### Ordenar los imports
-
-1. En **File/Settings...**, ir a **Editor | Code Style | Java | Imports**.
-2. Cambiar **Class count to use import with '*'** y **Names count to use static import with '*'** a un número muy alto (
-   ej: 99).
-3. En **Import Layout**, dejarlo como se muestra a continuación:
-    - `import static all other imports`
-    - `<blank line>`
-    - `import all other imports`
-
-![image](https://user-images.githubusercontent.com/39303639/228126787-36f9ecff-27f2-4b99-bf11-a6bd89f67087.png)
-
-### Instalar y configurar Checkstyle
-
-1. Instalar el plugin https://plugins.jetbrains.com/plugin/1065-checkstyle-idea:
-2. En **File/Settings...**, ir a **Tools | Checkstyle**.
-3. Configurarlo activando los Checks de Google y la versión de Checkstyle `== 8.35`:
-
-![image](https://user-images.githubusercontent.com/39303639/228126437-3d2f0137-3180-4221-a789-a057d920ae4e.png)
+> Proyecto académico — UTN FRBA, Diseño de Sistemas.

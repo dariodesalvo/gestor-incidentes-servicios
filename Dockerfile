@@ -10,7 +10,7 @@ RUN mvn clean package assembly:single -DskipTests
 # Package stage
 #
 FROM openjdk:17-jdk-slim
-COPY --from=build /target/ejercicio-1.0-SNAPSHOT-jar-with-dependencies.jar ejercicio.jar
+COPY --from=build /target/gestor-incidentes-servicios-1.0-SNAPSHOT-jar-with-dependencies.jar app.jar
 # ENV PORT=8080
 EXPOSE 8080
-CMD ["java","-classpath","ejercicio.jar","ar.edu.utn.frba.dds.server.App"]
+CMD ["java","-classpath","app.jar","ar.edu.utn.frba.dds.server.App"]

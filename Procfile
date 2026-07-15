@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -cp target/ejercicio-1.0-SNAPSHOT-jar-with-dependencies.jar ar.edu.utn.frba.dds.server.App
+web: java $JAVA_OPTS -cp target/gestor-incidentes-servicios-1.0-SNAPSHOT-jar-with-dependencies.jar ar.edu.utn.frba.dds.server.App
