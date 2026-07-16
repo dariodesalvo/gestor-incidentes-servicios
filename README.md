@@ -86,6 +86,20 @@ La dependencia de Handlebars.java se mantiene en **4.5.2 o superior** para incor
 corrección de la vulnerabilidad de *path traversal* en `FileTemplateLoader`
 ([CVE-2026-55760](https://github.com/advisories/GHSA-r4gv-qr8j-p3pg)).
 
+El stack de Jackson se fija en **2.18.8** para incorporar las correcciones de dos bypasses del
+`PolymorphicTypeValidator` en `jackson-databind`: uno vía parámetros genéricos, que permitía colar
+una clase denegada como argumento de tipo de un contenedor permitido
+([CVE-2026-54512](https://github.com/advisories/GHSA-j3rv-43j4-c7qm)), y otro vía arrays, donde
+`allowIfSubTypeIsArray()` no validaba el tipo del componente
+([CVE-2026-54513](https://github.com/advisories/GHSA-rmj7-2vxq-3g9f)).
+
+La versión se gobierna importando el `jackson-bom` desde `dependencyManagement` en el `pom.xml`, en
+lugar de fijarla dependencia por dependencia. Esto es intencional: `jackson-databind` es una
+dependencia directa, pero `jackson-core`, `jackson-annotations`, `jackson-datatype-jsr310` y
+`jackson-dataformat-xml` entran de forma transitiva vía `twilio`. Subir solo `jackson-databind`
+dejaría el resto del stack en una versión anterior, y Jackson no soporta esa mezcla en runtime. Al
+agregar nuevas dependencias de Jackson, **no les pongas `<version>`**: dejá que el BOM las alinee.
+
 ---
 
 > Proyecto académico — UTN FRBA, Diseño de Sistemas.
